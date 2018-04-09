@@ -293,9 +293,10 @@ namespace v2rayN.Forms
         private void chkAllowIn2State()
         {
             bool blAllow2 = chkAllowIn2.Checked;
-            txtlocalPort2.Enabled =
-            cmbprotocol2.Enabled =
-            chkudpEnabled2.Enabled = blAllow2;
+            txtlocalPort2.Enabled = txtlocalPort2.Visible =
+            cmbprotocol2.Enabled = cmbprotocol2.Visible = 
+            chkudpEnabled2.Enabled = chkudpEnabled2.Visible =
+            label3.Visible = blAllow2;
         }
     }
 }

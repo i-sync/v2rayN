@@ -172,7 +172,7 @@
             this.chkAllowIn2.TabIndex = 19;
             this.chkAllowIn2.Text = "本地监听端口2";
             this.chkAllowIn2.UseVisualStyleBackColor = true;
-            this.chkAllowIn2.Visible = false;
+            //this.chkAllowIn2.Visible = false;
             this.chkAllowIn2.CheckedChanged += new System.EventHandler(this.chkAllowIn2_CheckedChanged);
             // 
             // chkudpEnabled2
