@@ -9,11 +9,29 @@ namespace v2rayN
         /// 更新链接
         /// </summary>
         public const string UpdateUrl = @"https://github.com/2dust/v2rayN/releases";
-
         /// <summary>
         /// 关于链接
         /// </summary>
         public const string AboutUrl = @"https://github.com/2dust/v2rayN";
+        /// <summary>
+        /// Donate
+        /// </summary>
+        public const string DonateUrl = @"https://www.paypal.me/CaptainIronNG/18";
+        /// <summary>
+        ///  
+        /// </summary>
+        public const string GithubIssuesUrl = @"https://github.com/2dust/v2rayN/issues";
+        /// <summary>
+        ///  
+        /// </summary>
+        public const string TelegramGroupUrl = @"https://t.me/v2rayN";
+
+        /// <summary>
+        /// SpeedTestUrl
+        /// </summary>
+        //public const string SpeedTestUrl = @"https://github.com/2dust/v2rayN/releases/download/2.1/test.zip";
+        //public const string SpeedTestUrl = @"http://speedtest.tokyo2.linode.com/100MB-tokyo2.bin";
+        public const string SpeedTestUrl = @"http://speedtest-sfo2.digitalocean.com/10mb.test";
 
 
         /// <summary>
@@ -42,6 +60,10 @@ namespace v2rayN
         /// v2ray配置Httpresponse文件名
         /// </summary>
         public const string v2raySampleHttpresponseFileName = "v2rayN.Sample.SampleHttpresponse.txt";
+        /// <summary>
+        /// 空白的pac文件
+        /// </summary>
+        public const string BlankPacFileName = "v2rayN.Sample.BlankPac.txt";
 
 
         /// <summary>
@@ -88,6 +110,17 @@ namespace v2rayN
         /// </summary>
         public const string ssProtocol = "ss://";
 
+        /// <summary>
+        /// pac
+        /// </summary>
+        public const string pacFILE = "pac.txt";
+
+        /// <summary>
+        /// email
+        /// </summary>
+        public const string userEMail = "t@t.tt";
+
+
         #endregion
 
         #region 全局变量
@@ -116,7 +149,6 @@ namespace v2rayN
         /// PAC监听端口号
         /// </summary>
         public static int pacPort { get; set; }
-
 
         #endregion
 

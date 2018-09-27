@@ -113,6 +113,10 @@ namespace v2rayN.Mode
         /// <summary>
         /// 
         /// </summary>
+        public string email { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public string security { get; set; }
     }
 
@@ -329,10 +333,10 @@ namespace v2rayN.Mode
         /// </summary>
         public string security { get; set; }
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //public TlsSettings tlsSettings { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public TlsSettings tlsSettings { get; set; }
 
         /// <summary>
         /// Tcp传输额外设置
@@ -346,6 +350,10 @@ namespace v2rayN.Mode
         /// ws传输额外设置
         /// </summary>
         public WsSettings wsSettings { get; set; }
+        /// <summary>
+        /// h2传输额外设置
+        /// </summary>
+        public HttpSettings httpSettings { get; set; }
     }
 
     public class TlsSettings
@@ -354,6 +362,11 @@ namespace v2rayN.Mode
         /// 是否允许不安全连接（用于客户端）
         /// </summary>
         public bool allowInsecure { get; set; }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public string serverName { get; set; }        
     }
 
     public class TcpSettings
@@ -443,5 +456,19 @@ namespace v2rayN.Mode
         /// 
         /// </summary>
         public string Host { get; set; }
+    }
+
+    public class HttpSettings
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string path { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<string> host { get; set; }
+        
     }
 }

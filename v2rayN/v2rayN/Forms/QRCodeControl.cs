@@ -12,7 +12,8 @@ namespace v2rayN.Forms
         }
         private void QRCodeControl_Load(object sender, System.EventArgs e)
         {
-            txtUrl.MouseUp += txtUrl_MouseUp;
+            chkShow_CheckedChanged(null, null);
+            txtUrl.MouseUp += txtUrl_MouseUp;      
         }
 
         void txtUrl_MouseUp(object sender, MouseEventArgs e)
@@ -34,6 +35,12 @@ namespace v2rayN.Forms
                 picQRCode.Image = QRCodeHelper.GetQRCode(url);
                 txtUrl.Text = url;
             }
+        }
+
+        private void chkShow_CheckedChanged(object sender, System.EventArgs e)
+        {
+            picQRCode.Visible =
+            txtUrl.Visible = chkShow.Checked;
         }
 
     }

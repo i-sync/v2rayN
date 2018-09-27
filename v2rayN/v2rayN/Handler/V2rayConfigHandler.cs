@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using v2rayN.Mode;
+using System.Net;
+using System.Text;
 
 namespace v2rayN.Handler
 {
@@ -22,7 +24,7 @@ namespace v2rayN.Handler
         /// <param name="fileName"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public static int GenerateClientConfig(Config config, string fileName, out string msg)
+        public static int GenerateClientConfig(Config config, string fileName, bool blExport, out string msg)
         {
             msg = string.Empty;
 
@@ -62,7 +64,7 @@ namespace v2rayN.Handler
                 }
 
                 //开始修改配置
-                log(config, ref v2rayConfig);
+                log(config, ref v2rayConfig, blExport);
 
                 //本地端口
                 inbound(config, ref v2rayConfig);
@@ -75,6 +77,9 @@ namespace v2rayN.Handler
 
                 //outbound
                 outbound(config, ref v2rayConfig);
+
+                //dns
+                dns(config, ref v2rayConfig);
 
                 Utils.ToJsonFile(v2rayConfig, fileName);
 
@@ -94,20 +99,37 @@ namespace v2rayN.Handler
         /// <param name="config"></param>
         /// <param name="v2rayConfig"></param>
         /// <returns></returns>
-        private static int log(Config config, ref V2rayConfig v2rayConfig)
+        private static int log(Config config, ref V2rayConfig v2rayConfig, bool blExport)
         {
             try
             {
-                //日志
-                if (config.logEnabled)
+                if (blExport)
                 {
-                    v2rayConfig.log.loglevel = config.loglevel;
+                    if (config.logEnabled)
+                    {
+                        v2rayConfig.log.loglevel = config.loglevel;
+                    }
+                    else
+                    {
+                        v2rayConfig.log.loglevel = config.loglevel;
+                        v2rayConfig.log.access = "";
+                        v2rayConfig.log.error = "";
+                    }
                 }
                 else
                 {
-                    v2rayConfig.log.loglevel = "";
-                    v2rayConfig.log.access = "";
-                    v2rayConfig.log.error = "";
+                    if (config.logEnabled)
+                    {
+                        v2rayConfig.log.loglevel = config.loglevel;
+                        v2rayConfig.log.access = Utils.GetPath(v2rayConfig.log.access);
+                        v2rayConfig.log.error = Utils.GetPath(v2rayConfig.log.error);
+                    }
+                    else
+                    {
+                        v2rayConfig.log.loglevel = config.loglevel;
+                        v2rayConfig.log.access = "";
+                        v2rayConfig.log.error = "";
+                    }
                 }
             }
             catch
@@ -129,7 +151,14 @@ namespace v2rayN.Handler
                 //端口
                 v2rayConfig.inbound.port = config.inbound[0].localPort;
                 v2rayConfig.inbound.protocol = config.inbound[0].protocol;
-
+                if (config.allowLANConn)
+                {
+                    v2rayConfig.inbound.listen = "0.0.0.0";
+                }
+                else
+                {
+                    v2rayConfig.inbound.listen = "127.0.0.1";
+                }
                 //开启udp
                 v2rayConfig.inbound.settings.udp = config.inbound[0].udpEnabled;
             }
@@ -231,8 +260,18 @@ namespace v2rayN.Handler
                         rulesItem.ip.Add("geoip:cn");
                         v2rayConfig.routing.settings.rules.Add(rulesItem);
                     }
-                }
 
+                    //移动默认第一个规则到最后
+                    try
+                    {
+                        var ruleLan = v2rayConfig.routing.settings.rules[0];
+                        v2rayConfig.routing.settings.rules.RemoveAt(0);
+                        v2rayConfig.routing.settings.rules.Add(ruleLan);
+                    }
+                    catch
+                    {
+                    }
+                }
             }
             catch
             {
@@ -265,11 +304,14 @@ namespace v2rayN.Handler
                         {
                             continue;
                         }
-                        if (Utils.IsIP(url))
+                        if (Utils.IsIP(url) || url.StartsWith("geoip:"))
                         {
                             rulesIP.ip.Add(url);
                         }
-                        else if (Utils.IsDomain(url))
+                        else if (Utils.IsDomain(url)
+                            || url.StartsWith("geosite:")
+                            || url.StartsWith("regexp:")
+                            || url.StartsWith("domain:"))
                         {
                             rulesDomain.domain.Add(url);
                         }
@@ -289,6 +331,7 @@ namespace v2rayN.Handler
             }
             return 0;
         }
+
 
         /// <summary>
         /// vmess协议服务器配置
@@ -329,6 +372,7 @@ namespace v2rayN.Handler
                     //远程服务器用户ID
                     usersItem.id = config.id();
                     usersItem.alterId = config.alterId();
+                    usersItem.email = Global.userEMail;
                     usersItem.security = config.security();
 
                     //Mux
@@ -425,23 +469,39 @@ namespace v2rayN.Handler
                         WsSettings wsSettings = new WsSettings();
                         wsSettings.connectionReuse = true;
 
-                        string path = "";
-                        string host2 = "";
-                        //*ws(path+host),它们中间分号(;)隔开
-                        string[] arrParameter = config.requestHost().Replace(" ", "").Split(';');
-                        if (arrParameter.Length > 0)
+                        string host2 = config.requestHost().Replace(" ", "");
+                        string path = config.path().Replace(" ", "");
+                        if (!string.IsNullOrWhiteSpace(host2))
                         {
-                            path = arrParameter[0];
-                            wsSettings.path = path;
-                        }
-                        if (arrParameter.Length > 1)
-                        {
-                            host2 = arrParameter[1];
                             wsSettings.headers = new Headers();
                             wsSettings.headers.Host = host2;
                         }
-
+                        if (!string.IsNullOrWhiteSpace(path))
+                        {
+                            wsSettings.path = path;
+                        }
                         streamSettings.wsSettings = wsSettings;
+
+                        TlsSettings tlsSettings = new TlsSettings();
+                        tlsSettings.allowInsecure = config.allowInsecure();
+                        streamSettings.tlsSettings = tlsSettings;
+                        break;
+                    //h2
+                    case "h2":
+                        HttpSettings httpSettings = new HttpSettings();
+
+                        string host3 = config.requestHost().Replace(" ", "");
+                        if (!string.IsNullOrWhiteSpace(host3))
+                        {
+                            httpSettings.host = Utils.String2List(host3);
+                        }
+                        httpSettings.path = config.path().Replace(" ", "");
+
+                        streamSettings.httpSettings = httpSettings;
+
+                        TlsSettings tlsSettings2 = new TlsSettings();
+                        tlsSettings2.allowInsecure = config.allowInsecure();
+                        streamSettings.tlsSettings = tlsSettings2;
                         break;
                     default:
                         //tcp带http伪装
@@ -474,6 +534,38 @@ namespace v2rayN.Handler
             return 0;
         }
 
+        /// <summary>
+        /// remoteDNS
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="v2rayConfig"></param>
+        /// <returns></returns>
+        private static int dns(Config config, ref V2rayConfig v2rayConfig)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(config.remoteDNS))
+                {
+                    return 0;
+                }
+                List<string> servers = new List<string>();
+
+                string[] arrDNS = config.remoteDNS.Split(',');
+                foreach (string str in arrDNS)
+                {
+                    if (Utils.IsIP(str))
+                    {
+                        servers.Add(str);
+                    }
+                }
+                servers.Add("localhost");
+                v2rayConfig.dns.servers = servers;
+            }
+            catch
+            {
+            }
+            return 0;
+        }
 
         /// <summary>
         /// 生成v2ray的客户端配置文件(自定义配置)
@@ -563,7 +655,7 @@ namespace v2rayN.Handler
                 }
 
                 ////开始修改配置
-                log(config, ref v2rayConfig);
+                log(config, ref v2rayConfig, true);
 
                 //vmess协议服务器配置
                 ServerInbound(config, ref v2rayConfig);
@@ -609,6 +701,7 @@ namespace v2rayN.Handler
                 //远程服务器用户ID
                 usersItem.id = config.id();
                 usersItem.alterId = config.alterId();
+                usersItem.email = Global.userEMail;
 
                 //远程服务器底层传输配置
                 StreamSettings streamSettings = v2rayConfig.inbound.streamSettings;
@@ -740,6 +833,36 @@ namespace v2rayN.Handler
                     vmessItem.headerType = v2rayConfig.outbound.streamSettings.kcpSettings.header.type;
                 }
 
+                //ws
+                if (v2rayConfig.outbound.streamSettings != null
+                    && v2rayConfig.outbound.streamSettings.wsSettings != null)
+                {
+                    if (!Utils.IsNullOrEmpty(v2rayConfig.outbound.streamSettings.wsSettings.path))
+                    {
+                        vmessItem.path = v2rayConfig.outbound.streamSettings.wsSettings.path;
+                    }
+                    if (v2rayConfig.outbound.streamSettings.wsSettings.headers != null
+                      && !Utils.IsNullOrEmpty(v2rayConfig.outbound.streamSettings.wsSettings.headers.Host))
+                    {
+                        vmessItem.requestHost = v2rayConfig.outbound.streamSettings.wsSettings.headers.Host;
+                    }
+                }
+
+                //h2
+                if (v2rayConfig.outbound.streamSettings != null
+                    && v2rayConfig.outbound.streamSettings.httpSettings != null)
+                {
+                    if (!Utils.IsNullOrEmpty(v2rayConfig.outbound.streamSettings.httpSettings.path))
+                    {
+                        vmessItem.path = v2rayConfig.outbound.streamSettings.httpSettings.path;
+                    }
+                    if (v2rayConfig.outbound.streamSettings.httpSettings.host != null
+                        && v2rayConfig.outbound.streamSettings.httpSettings.host.Count > 0)
+                    {
+                        vmessItem.requestHost = Utils.List2String(v2rayConfig.outbound.streamSettings.httpSettings.host);
+                    }
+                }
+
             }
             catch
             {
@@ -831,7 +954,7 @@ namespace v2rayN.Handler
                         }
                     }
                 }
-                ////kcp伪装
+                //kcp伪装
                 //if (v2rayConfig.outbound.streamSettings != null
                 //    && v2rayConfig.outbound.streamSettings.kcpSettings != null
                 //    && v2rayConfig.outbound.streamSettings.kcpSettings.header != null
@@ -839,6 +962,36 @@ namespace v2rayN.Handler
                 //{
                 //    cmbHeaderType.Text = v2rayConfig.outbound.streamSettings.kcpSettings.header.type;
                 //}
+
+                //ws
+                if (v2rayConfig.inbound.streamSettings != null
+                    && v2rayConfig.inbound.streamSettings.wsSettings != null)
+                {
+                    if (!Utils.IsNullOrEmpty(v2rayConfig.inbound.streamSettings.wsSettings.path))
+                    {
+                        vmessItem.path = v2rayConfig.inbound.streamSettings.wsSettings.path;
+                    }
+                    if (v2rayConfig.inbound.streamSettings.wsSettings.headers != null
+                      && !Utils.IsNullOrEmpty(v2rayConfig.inbound.streamSettings.wsSettings.headers.Host))
+                    {
+                        vmessItem.requestHost = v2rayConfig.inbound.streamSettings.wsSettings.headers.Host;
+                    }
+                }
+
+                //h2
+                if (v2rayConfig.inbound.streamSettings != null
+                    && v2rayConfig.inbound.streamSettings.httpSettings != null)
+                {
+                    if (!Utils.IsNullOrEmpty(v2rayConfig.inbound.streamSettings.httpSettings.path))
+                    {
+                        vmessItem.path = v2rayConfig.inbound.streamSettings.httpSettings.path;
+                    }
+                    if (v2rayConfig.inbound.streamSettings.httpSettings.host != null
+                        && v2rayConfig.inbound.streamSettings.httpSettings.host.Count > 0)
+                    {
+                        vmessItem.requestHost = Utils.List2String(v2rayConfig.inbound.streamSettings.httpSettings.host);
+                    }
+                }
             }
             catch
             {
@@ -854,7 +1007,7 @@ namespace v2rayN.Handler
         /// <param name="fileName"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public static VmessItem ImportFromClipboardConfig(out string msg)
+        public static VmessItem ImportFromClipboardConfig(string clipboardData, out string msg)
         {
             msg = string.Empty;
             VmessItem vmessItem = new VmessItem();
@@ -862,7 +1015,7 @@ namespace v2rayN.Handler
             try
             {
                 //载入配置文件 
-                string result = Utils.GetClipboardData();
+                string result = clipboardData.Trim();// Utils.GetClipboardData();
                 if (Utils.IsNullOrEmpty(result))
                 {
                     msg = "读取配置文件失败";
@@ -871,30 +1024,42 @@ namespace v2rayN.Handler
 
                 if (result.StartsWith(Global.vmessProtocol))
                 {
-                    vmessItem.configType = (int)EConfigType.Vmess;
-                    result = result.Substring(Global.vmessProtocol.Length);
-                    result = Utils.Base64Decode(result);
-
-                    //转成Json
-                    VmessQRCode vmessQRCode = Utils.FromJson<VmessQRCode>(result);
-                    if (vmessQRCode == null)
+                    int indexSplit = result.IndexOf("?");
+                    if (indexSplit > 0)
                     {
-                        msg = "转换配置文件失败";
-                        return null;
+                        vmessItem = ResolveVmess4Kitsunebi(result);
                     }
-                    vmessItem.security = Global.DefaultSecurity;
-                    vmessItem.network = Global.DefaultNetwork;
-                    vmessItem.headerType = Global.None;
+                    else
+                    {
+                        vmessItem.configType = (int)EConfigType.Vmess;
+                        result = result.Substring(Global.vmessProtocol.Length);
+                        result = Utils.Base64Decode(result);
 
-                    vmessItem.remarks = vmessQRCode.ps;
-                    vmessItem.address = vmessQRCode.add;
-                    vmessItem.port = Convert.ToInt32(vmessQRCode.port);
-                    vmessItem.id = vmessQRCode.id;
-                    vmessItem.alterId = Convert.ToInt32(vmessQRCode.aid);
-                    vmessItem.network = vmessQRCode.net;
-                    vmessItem.headerType = vmessQRCode.type;
-                    vmessItem.requestHost = vmessQRCode.host;
-                    vmessItem.streamSecurity = vmessQRCode.tls;
+                        //转成Json
+                        VmessQRCode vmessQRCode = Utils.FromJson<VmessQRCode>(result);
+                        if (vmessQRCode == null)
+                        {
+                            msg = "转换配置文件失败";
+                            return null;
+                        }
+                        vmessItem.security = Global.DefaultSecurity;
+                        vmessItem.network = Global.DefaultNetwork;
+                        vmessItem.headerType = Global.None;
+
+                        vmessItem.configVersion = Utils.ToInt(vmessQRCode.v);
+                        vmessItem.remarks = vmessQRCode.ps;
+                        vmessItem.address = vmessQRCode.add;
+                        vmessItem.port = Utils.ToInt(vmessQRCode.port);
+                        vmessItem.id = vmessQRCode.id;
+                        vmessItem.alterId = Utils.ToInt(vmessQRCode.aid);
+                        vmessItem.network = vmessQRCode.net;
+                        vmessItem.headerType = vmessQRCode.type;
+                        vmessItem.requestHost = vmessQRCode.host;
+                        vmessItem.path = vmessQRCode.path;
+                        vmessItem.streamSecurity = vmessQRCode.tls;
+                    }
+
+                    ConfigHandler.UpgradeServerVersion(ref vmessItem);
                 }
                 else if (result.StartsWith(Global.ssProtocol))
                 {
@@ -902,12 +1067,27 @@ namespace v2rayN.Handler
 
                     vmessItem.configType = (int)EConfigType.Shadowsocks;
                     result = result.Substring(Global.ssProtocol.Length);
+                    //remark
                     int indexRemark = result.IndexOf("#");
                     if (indexRemark > 0)
                     {
+                        try
+                        {
+                            vmessItem.remarks = WebUtility.UrlDecode(result.Substring(indexRemark + 1, result.Length - indexRemark - 1));
+                        }
+                        catch { }
                         result = result.Substring(0, indexRemark);
                     }
-                    result = Utils.Base64Decode(result);
+                    //part decode
+                    int indexS = result.IndexOf("@");
+                    if (indexS > 0)
+                    {
+                        result = Utils.Base64Decode(result.Substring(0, indexS)) + result.Substring(indexS, result.Length - indexS);
+                    }
+                    else
+                    {
+                        result = Utils.Base64Decode(result);
+                    }
 
                     string[] arr1 = result.Split('@');
                     if (arr1.Length != 2)
@@ -921,7 +1101,7 @@ namespace v2rayN.Handler
                         return null;
                     }
                     vmessItem.address = arr22[0];
-                    vmessItem.port = Convert.ToInt32(arr22[1]);
+                    vmessItem.port = Utils.ToInt(arr22[1]);
                     vmessItem.security = arr21[0];
                     vmessItem.id = arr21[1];
                 }
@@ -951,7 +1131,7 @@ namespace v2rayN.Handler
         public static int Export2ClientConfig(Config config, string fileName, out string msg)
         {
             msg = string.Empty;
-            return GenerateClientConfig(config, fileName, out msg);
+            return GenerateClientConfig(config, fileName, true, out msg);
         }
 
         /// <summary>
@@ -965,6 +1145,44 @@ namespace v2rayN.Handler
         {
             msg = string.Empty;
             return GenerateServerConfig(config, fileName, out msg);
+        }
+
+        private static VmessItem ResolveVmess4Kitsunebi(string result)
+        {
+            VmessItem vmessItem = new VmessItem();
+
+            vmessItem.configType = (int)EConfigType.Vmess;
+            result = result.Substring(Global.vmessProtocol.Length);
+            int indexSplit = result.IndexOf("?");
+            if (indexSplit > 0)
+            {
+                result = result.Substring(0, indexSplit);
+            }
+            result = Utils.Base64Decode(result);
+
+            string[] arr1 = result.Split('@');
+            if (arr1.Length != 2)
+            {
+                return null;
+            }
+            string[] arr21 = arr1[0].Split(':');
+            string[] arr22 = arr1[1].Split(':');
+            if (arr21.Length != 2 || arr21.Length != 2)
+            {
+                return null;
+            }
+
+            vmessItem.address = arr22[0];
+            vmessItem.port = Utils.ToInt(arr22[1]);
+            vmessItem.security = arr21[0];
+            vmessItem.id = arr21[1];
+
+            vmessItem.network = Global.DefaultNetwork;
+            vmessItem.headerType = Global.None;
+            vmessItem.remarks = "Alien";
+            vmessItem.alterId = 0;
+
+            return vmessItem;
         }
 
         #endregion

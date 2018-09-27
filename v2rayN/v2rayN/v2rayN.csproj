@@ -9,10 +9,12 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>v2rayN</RootNamespace>
     <AssemblyName>v2rayN</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <IsWebBootstrapper>false</IsWebBootstrapper>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <PublishUrl>发布\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -60,11 +62,16 @@
     <ManifestKeyFile>v2rayN_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>false</SignManifests>
   </PropertyGroup>
+  <PropertyGroup />
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup />
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">
@@ -78,9 +85,10 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Net" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
     <Reference Include="zxing">
       <HintPath>.\zxing.dll</HintPath>
       <Private>False</Private>
@@ -91,6 +99,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Forms\SubSettingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SubSettingForm.Designer.cs">
+      <DependentUpon>SubSettingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\AddServer2Form.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -109,6 +123,8 @@
     <Compile Include="Forms\QRCodeControl.Designer.cs">
       <DependentUpon>QRCodeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Handler\V2rayUpdateHandle.cs" />
+    <Compile Include="HttpProxyHandler\HttpWebServer.cs" />
     <Compile Include="HttpProxyHandler\PACFileWatcherHandle.cs" />
     <Compile Include="HttpProxyHandler\PrivoxyHandler.cs" />
     <Compile Include="HttpProxyHandler\PACListHandle.cs" />
@@ -121,7 +137,6 @@
     <Compile Include="StringEx.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Tool\CDateTime.cs" />
     <Compile Include="Forms\AddServerForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -162,6 +177,9 @@
     <Compile Include="Tool\UI.cs" />
     <Compile Include="Tool\Utils.cs" />
     <Compile Include="Handler\V2rayConfigHandler.cs" />
+    <EmbeddedResource Include="Forms\SubSettingForm.resx">
+      <DependentUpon>SubSettingForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\AddServerForm.resx">
       <DependentUpon>AddServerForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -183,6 +201,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\AddServer3Form.resx">
       <DependentUpon>AddServer3Form.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -194,6 +213,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="app.config">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -261,9 +283,17 @@
     <None Include="Resources\minimize.png" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Sample\BlankPac.txt" />
+    <None Include="Resources\sub.png" />
+    <None Include="Resources\checkupdate.png" />
+    <None Include="Resources\about.png" />
+    <Content Include="Resources\help.png" />
     <Content Include="Resources\privoxy_conf.txt" />
     <EmbeddedResource Include="zxing.presentation.dll" />
     <EmbeddedResource Include="zxing.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="protos\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

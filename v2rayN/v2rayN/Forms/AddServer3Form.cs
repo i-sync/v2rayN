@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Drawing;
 using System.Windows.Forms;
 using v2rayN.Handler;
 using v2rayN.Mode;
-using ZXing;
-using ZXing.Common;
-using ZXing.QrCode;
 
 namespace v2rayN.Forms
 {
     public partial class AddServer3Form : BaseForm
     {
         public int EditIndex { get; set; }
+        VmessItem vmessItem = null;
 
         public AddServer3Form()
         {
@@ -23,10 +20,12 @@ namespace v2rayN.Forms
         {
             if (EditIndex >= 0)
             {
+                vmessItem = config.vmess[EditIndex];
                 BindingServer();
             }
             else
             {
+                vmessItem = new VmessItem();
                 ClearServer();
             }
         }
@@ -36,7 +35,6 @@ namespace v2rayN.Forms
         /// </summary>
         private void BindingServer()
         {
-            VmessItem vmessItem = config.vmess[EditIndex];
 
             txtAddress.Text = vmessItem.address;
             txtPort.Text = vmessItem.port.ToString();
@@ -87,9 +85,8 @@ namespace v2rayN.Forms
                 return;
             }
 
-            VmessItem vmessItem = new VmessItem();
             vmessItem.address = address;
-            vmessItem.port = Convert.ToInt32(port);
+            vmessItem.port = Utils.ToInt(port);
             vmessItem.id = id;
             vmessItem.security = security;
             vmessItem.remarks = remarks;
@@ -189,7 +186,7 @@ namespace v2rayN.Forms
             ClearServer();
 
             string msg;
-            VmessItem vmessItem = V2rayConfigHandler.ImportFromClipboardConfig(out msg);
+            VmessItem vmessItem = V2rayConfigHandler.ImportFromClipboardConfig(Utils.GetClipboardData(), out msg);
             if (vmessItem == null)
             {
                 UI.Show(msg);
@@ -213,7 +210,7 @@ namespace v2rayN.Forms
 
         private void bgwScan_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            string ret = scanScreen();
+            string ret = Utils.ScanScreen();
             bgwScan.ReportProgress(0, ret);
         }
 
@@ -234,55 +231,5 @@ namespace v2rayN.Forms
 
         }
 
-        private string scanScreen()
-        {
-            string ret = string.Empty;
-            try
-            {
-                foreach (Screen screen in Screen.AllScreens)
-                {
-                    using (Bitmap fullImage = new Bitmap(screen.Bounds.Width,
-                                                    screen.Bounds.Height))
-                    {
-                        using (Graphics g = Graphics.FromImage(fullImage))
-                        {
-                            g.CopyFromScreen(screen.Bounds.X,
-                                             screen.Bounds.Y,
-                                             0, 0,
-                                             fullImage.Size,
-                                             CopyPixelOperation.SourceCopy);
-                        }
-                        int maxTry = 10;
-                        for (int i = 0; i < maxTry; i++)
-                        {
-                            int marginLeft = (int)((double)fullImage.Width * i / 2.5 / maxTry);
-                            int marginTop = (int)((double)fullImage.Height * i / 2.5 / maxTry);
-                            Rectangle cropRect = new Rectangle(marginLeft, marginTop, fullImage.Width - marginLeft * 2, fullImage.Height - marginTop * 2);
-                            Bitmap target = new Bitmap(screen.Bounds.Width, screen.Bounds.Height);
-
-                            double imageScale = (double)screen.Bounds.Width / (double)cropRect.Width;
-                            using (Graphics g = Graphics.FromImage(target))
-                            {
-                                g.DrawImage(fullImage, new Rectangle(0, 0, target.Width, target.Height),
-                                                cropRect,
-                                                GraphicsUnit.Pixel);
-                            }
-
-                            var source = new BitmapLuminanceSource(target);
-                            var bitmap = new BinaryBitmap(new HybridBinarizer(source));
-                            QRCodeReader reader = new QRCodeReader();
-                            var result = reader.decode(bitmap);
-                            if (result != null)
-                            {
-                                ret = result.Text;
-                                return ret;
-                            }
-                        }
-                    }
-                }
-            }
-            catch { }
-            return string.Empty;
-        }
     }
 }

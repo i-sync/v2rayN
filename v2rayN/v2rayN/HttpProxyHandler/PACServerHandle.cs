@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Threading;
 using v2rayN.Mode;
 using v2rayN.Properties;
 using v2rayN.Tool;
@@ -14,94 +14,84 @@ namespace v2rayN.HttpProxyHandler
     /// </summary>
     class PACServerHandle
     {
-        public const string PAC_FILE = "pac.txt";
-
-        private static HttpListener pacLinstener;
-
+        private static HttpWebServer ws;
+        private static HttpWebServer wsLAN;
+        private static string pacList = string.Empty;
+        private static string pacListLAN = string.Empty;
         public static void Init(Config config)
         {
-            pacLinstener = new HttpListener(); //创建监听实例  
-            pacLinstener.Prefixes.Add(string.Format("http://127.0.0.1:{0}/pac/", Global.pacPort)); //添加监听地址 注意是以/结尾。  
-            pacLinstener.Start(); //允许该监听地址接受请求的传入。  
-            Thread threadpacLinstener = new Thread(new ParameterizedThreadStart(GetPacList)); //创建开启一个线程监听该地址得请求  
-            threadpacLinstener.IsBackground = true;
-            threadpacLinstener.Start(config);
+            string address = "127.0.0.1";
+            pacList = GetPacList(address);
+            string prefixes = string.Format("http://{0}:{1}/pac/", address, Global.pacPort);
+            Utils.SaveLog("Webserver prefixes " + prefixes);
+            ws = new HttpWebServer(SendResponse, prefixes);
+            ws.Run();
 
+            if (config.allowLANConn)
+            {
+                List<string> lstIPAddress = Utils.GetHostIPAddress();
+                if (lstIPAddress.Count <= 0)
+                {
+                    return;
+                }
+                pacListLAN = GetPacList(lstIPAddress[0]);
+                string prefixesLAN = string.Format("http://{0}:{1}/pac/", lstIPAddress[0], Global.pacPort);
+                Utils.SaveLog("Webserver prefixes " + prefixesLAN);
+                wsLAN = new HttpWebServer(SendResponseLAN, prefixesLAN);
+                wsLAN.Run();
+            }
+        }
+
+        public static string SendResponse(HttpListenerRequest request)
+        {
+            //Utils.SaveLog("Webserver SendResponse");
+            return pacList;
+        }
+        public static string SendResponseLAN(HttpListenerRequest request)
+        {
+            //Utils.SaveLog("Webserver SendResponseLAN");
+            return pacListLAN;
         }
 
         public static void Stop()
         {
-            if (pacLinstener != null && pacLinstener.IsListening)
+            if (ws != null)
             {
-                pacLinstener.Abort();
-                pacLinstener = null;
+                Utils.SaveLog("Webserver Stop ws");
+                ws.Stop();
+            }
+            if (wsLAN != null)
+            {
+                Utils.SaveLog("Webserver Stop wsLAN");
+                wsLAN.Stop();
             }
         }
 
-        private static void GetPacList(object config)
+        private static string GetPacList(string address)
         {
-            var cfg = config as Config;
             var port = Global.sysAgentPort;
             if (port <= 0)
             {
-                return;
+                return "No port";
             }
-            var proxy = string.Format("PROXY 127.0.0.1:{0};", port);
-            while (pacLinstener != null && pacLinstener.IsListening)
+            try
             {
-                HttpListenerContext requestContext = null;
-                try
+                List<string> lstProxy = new List<string>();
+                lstProxy.Add(string.Format("PROXY {0}:{1};", address, port));
+                var proxy = string.Join("", lstProxy.ToArray());
+
+                string strPacfile = Utils.GetPath(Global.pacFILE);
+                if (!File.Exists(strPacfile))
                 {
-                    requestContext = pacLinstener.GetContext(); //接受到新的请求  
-                    //reecontext 为开启线程传入的 requestContext请求对象  
-                    Thread subthread = new Thread(new ParameterizedThreadStart((reecontext) =>
-                    {
-                        requestContext.Response.StatusCode = 200;
-                        requestContext.Response.ContentType = "application/x-ns-proxy-autoconfig";
-                        requestContext.Response.ContentEncoding = Encoding.UTF8;
-                        string strPacFile = Utils.GetPath(PAC_FILE);
-                        if (!File.Exists(strPacFile))
-                        {
-                            //TODO:暂时没解决更新PAC列表的问题，用直接解压现有PAC解决
-                            //new PACListHandle().UpdatePACFromGFWList(cfg);
-                            FileManager.UncompressFile(strPacFile, Resources.pac_txt);
-                        }
-                        var pac = File.ReadAllText(strPacFile, Encoding.UTF8);
-                        pac = pac.Replace("__PROXY__", proxy);
-                        byte[] buffer = System.Text.Encoding.UTF8.GetBytes(pac);
-                        //对客户端输出相应信息.  
-                        requestContext.Response.ContentLength64 = buffer.Length;
-                        System.IO.Stream output = requestContext.Response.OutputStream;
-                        output.Write(buffer, 0, buffer.Length);
-                        //关闭输出流，释放相应资源  
-                        output.Close();
-                    }));
-                    subthread.Start(requestContext); //开启处理线程处理下载文件  
+                    FileManager.UncompressFile(strPacfile, Resources.pac_txt);
                 }
-                catch (HttpListenerException)
-                {
-                    continue;
-                }
-                catch (Exception ex)
-                {
-                    try
-                    {
-                        requestContext.Response.StatusCode = 500;
-                        requestContext.Response.ContentType = "application/text";
-                        requestContext.Response.ContentEncoding = Encoding.UTF8;
-                        byte[] buffer = System.Text.Encoding.UTF8.GetBytes("System Error");
-                        //对客户端输出相应信息.  
-                        requestContext.Response.ContentLength64 = buffer.Length;
-                        System.IO.Stream output = requestContext.Response.OutputStream;
-                        output.Write(buffer, 0, buffer.Length);
-                        //关闭输出流，释放相应资源  
-                        output.Close();
-                    }
-                    catch
-                    {
-                    }
-                }
+                var pac = File.ReadAllText(strPacfile, Encoding.UTF8);
+                pac = pac.Replace("__PROXY__", proxy);
+                return pac;
             }
+            catch
+            { }
+            return "No pac content";
         }
     }
 }

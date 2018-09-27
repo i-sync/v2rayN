@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace v2rayN.Mode
 {
@@ -68,14 +69,10 @@ namespace v2rayN.Mode
         /// KcpItem
         /// </summary>
         public KcpItem kcpItem { get; set; }
+              
 
         /// <summary>
-        /// 自动从网络同步本地时间
-        /// </summary>
-        public bool autoSyncTime { get; set; }
-
-        /// <summary>
-        /// 启用系统代理
+        /// 启用Http代理
         /// </summary>
         public bool sysAgentEnabled { get; set; }
 
@@ -88,6 +85,20 @@ namespace v2rayN.Mode
         /// 自定义GFWList url
         /// </summary>
         public string urlGFWList { get; set; }
+
+        /// <summary>
+        /// 允许来自局域网的连接
+        /// </summary>
+        public bool allowLANConn { get; set; }
+
+        /// <summary>
+        /// 自定义远程DNS
+        /// </summary>
+        public string remoteDNS { get; set; }
+        /// <summary>
+        /// 订阅
+        /// </summary>
+        public List<SubItem> subItem { get; set; }
 
         #region 函数
 
@@ -168,6 +179,14 @@ namespace v2rayN.Mode
             }
             return vmess[index].requestHost;
         }
+        public string path()
+        {
+            if (index < 0 || Utils.IsNullOrEmpty(vmess[index].path))
+            {
+                return string.Empty;
+            }
+            return vmess[index].path;
+        }
         public string streamSecurity()
         {
             if (index < 0 || Utils.IsNullOrEmpty(vmess[index].streamSecurity))
@@ -175,6 +194,14 @@ namespace v2rayN.Mode
                 return string.Empty;
             }
             return vmess[index].streamSecurity;
+        }
+        public bool allowInsecure()
+        {
+            if (index < 0 || Utils.IsNullOrEmpty(vmess[index].allowInsecure))
+            {
+                return true;
+            }
+            return Convert.ToBoolean(vmess[index].allowInsecure);
         }
 
         public int GetLocalPort(string protocol)
@@ -218,6 +245,7 @@ namespace v2rayN.Mode
     {
         public VmessItem()
         {
+            configVersion = 1;
             address = string.Empty;
             port = 0;
             id = string.Empty;
@@ -227,21 +255,39 @@ namespace v2rayN.Mode
             remarks = string.Empty;
             headerType = string.Empty;
             requestHost = string.Empty;
+            path = string.Empty;
             streamSecurity = string.Empty;
+            allowInsecure = string.Empty;
             configType = (int)EConfigType.Vmess;
+            testResult = string.Empty;
+            subid = string.Empty;
         }
 
         public string getSummary()
         {
             string summary = string.Empty;
             summary = string.Format("{0}-", ((EConfigType)configType).ToString());
+            string[] arrAddr = address.Split('.');
+            string addr = string.Empty;
+            if (arrAddr.Length > 2)
+            {
+                addr = $"{arrAddr[0]}***{arrAddr[arrAddr.Length - 1]}";
+            }
+            else if (arrAddr.Length > 1)
+            {
+                addr = $"***{arrAddr[arrAddr.Length - 1]}";
+            }
+            else
+            {
+                addr = address;
+            }
             if (configType == (int)EConfigType.Vmess)
             {
-                summary += string.Format("{0}({1}:{2})", remarks, address, port);
+                summary += string.Format("{0}({1}:{2})", remarks, addr, port);
             }
             else if (configType == (int)EConfigType.Shadowsocks)
             {
-                summary += string.Format("{0}({1}:{2})", remarks, address, port);
+                summary += string.Format("{0}({1}:{2})", remarks, addr, port);
             }
             else
             {
@@ -249,6 +295,30 @@ namespace v2rayN.Mode
             }
             return summary;
         }
+        public string getSubRemarks(Config config)
+        {
+            string subRemarks = string.Empty;
+            if (Utils.IsNullOrEmpty(subid))
+            {
+                return subRemarks;
+            }
+            foreach (SubItem sub in config.subItem)
+            {
+                if (sub.id.EndsWith(subid))
+                {
+                    return sub.remarks;
+                }
+            }
+            if (subid.Length <= 4)
+            {
+                return subid;
+            }
+            return subid.Substring(0, 4);
+        }
+        /// <summary>
+        /// 版本(现在=2)
+        /// </summary>
+        public int configVersion { get; set; }
 
         /// <summary>
         /// 远程服务器地址
@@ -290,15 +360,35 @@ namespace v2rayN.Mode
         public string requestHost { get; set; }
 
         /// <summary>
+        /// ws h2 path
+        /// </summary>
+        public string path { get; set; }
+
+        /// <summary>
         /// 底层传输安全
         /// </summary>
         public string streamSecurity { get; set; }
+
+        /// <summary>
+        /// 是否允许不安全连接（用于客户端）
+        /// </summary>
+        public string allowInsecure { get; set; }
+
 
         /// <summary>
         /// config type(1=normal,2=custom)
         /// </summary>
         public int configType { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public string testResult { get; set; }
+
+        /// <summary>
+        /// SubItem id
+        /// </summary>
+        public string subid { get; set; }
     }
 
     [Serializable]
@@ -351,5 +441,25 @@ namespace v2rayN.Mode
         /// 
         /// </summary>
         public int writeBufferSize { get; set; }
+    }
+
+
+    [Serializable]
+    public class SubItem
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string id { get; set; }
+
+        /// <summary>
+        /// 备注
+        /// </summary>
+        public string remarks { get; set; }
+
+        /// <summary>
+        /// url
+        /// </summary>
+        public string url { get; set; }
     }
 }

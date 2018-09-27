@@ -53,6 +53,9 @@ namespace v2rayN.Forms
                 }
                 chkAllowIn2State();
             }
+
+            //remoteDNS
+            txtremoteDNS.Text = config.remoteDNS;
         }
 
         /// <summary>
@@ -91,11 +94,10 @@ namespace v2rayN.Forms
             //开机自动启动
             chkAutoRun.Checked = Utils.IsAutoRun();
 
-            //自动从网络同步本地时间
-            chkAutoSyncTime.Checked = config.autoSyncTime;
-
             //自定义GFWList
             txturlGFWList.Text = config.urlGFWList;
+
+            chkAllowLANConn.Checked = config.allowLANConn;
 
         }
 
@@ -158,7 +160,7 @@ namespace v2rayN.Forms
                 UI.Show("请选择协议");
                 return -1;
             }
-            config.inbound[0].localPort = Convert.ToInt32(localPort);
+            config.inbound[0].localPort = Utils.ToInt(localPort);
             config.inbound[0].protocol = protocol;
             config.inbound[0].udpEnabled = udpEnabled;
 
@@ -182,7 +184,7 @@ namespace v2rayN.Forms
                 {
                     config.inbound.Add(new Mode.InItem());
                 }
-                config.inbound[1].localPort = Convert.ToInt32(localPort2);
+                config.inbound[1].localPort = Utils.ToInt(localPort2);
                 config.inbound[1].protocol = protocol2;
                 config.inbound[1].udpEnabled = udpEnabled2;
             }
@@ -200,6 +202,9 @@ namespace v2rayN.Forms
 
             //Mux
             config.muxEnabled = muxEnabled;
+
+            //remoteDNS
+            config.remoteDNS = txtremoteDNS.Text.Trim();
 
             return 0;
         }
@@ -252,12 +257,12 @@ namespace v2rayN.Forms
                 UI.Show("请正确填写KCP参数");
                 return -1;
             }
-            config.kcpItem.mtu = Convert.ToInt32(mtu);
-            config.kcpItem.tti = Convert.ToInt32(tti);
-            config.kcpItem.uplinkCapacity = Convert.ToInt32(uplinkCapacity);
-            config.kcpItem.downlinkCapacity = Convert.ToInt32(downlinkCapacity);
-            config.kcpItem.readBufferSize = Convert.ToInt32(readBufferSize);
-            config.kcpItem.writeBufferSize = Convert.ToInt32(writeBufferSize);
+            config.kcpItem.mtu = Utils.ToInt(mtu);
+            config.kcpItem.tti = Utils.ToInt(tti);
+            config.kcpItem.uplinkCapacity = Utils.ToInt(uplinkCapacity);
+            config.kcpItem.downlinkCapacity = Utils.ToInt(downlinkCapacity);
+            config.kcpItem.readBufferSize = Utils.ToInt(readBufferSize);
+            config.kcpItem.writeBufferSize = Utils.ToInt(writeBufferSize);
             config.kcpItem.congestion = congestion;
 
             return 0;
@@ -272,11 +277,10 @@ namespace v2rayN.Forms
             //开机自动启动
             Utils.SetAutoRun(chkAutoRun.Checked);
 
-            //自动从网络同步本地时间
-            config.autoSyncTime = chkAutoSyncTime.Checked;
-            
             //自定义GFWList
             config.urlGFWList = txturlGFWList.Text.Trim();
+
+            config.allowLANConn = chkAllowLANConn.Checked;
 
             return 0;
         }
