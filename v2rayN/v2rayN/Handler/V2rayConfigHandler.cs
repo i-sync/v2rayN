@@ -145,21 +145,30 @@ namespace v2rayN.Handler
         {
             try
             {
-                var inbound = v2rayConfig.inbounds[0];
-                //端口
-                inbound.port = config.inbound[0].localPort;
-                inbound.protocol = config.inbound[0].protocol;
-                if (config.allowLANConn)
+                //before add , clear
+                var temp = v2rayConfig.inbounds[0];
+                v2rayConfig.inbounds.Clear();
+                foreach (var i in config.inbound)
                 {
-                    inbound.listen = "0.0.0.0";
+                    var inbound = temp.DeepClone();
+                    //端口
+                    inbound.port = i.localPort;
+                    inbound.protocol = i.protocol;
+                    if (config.allowLANConn)
+                    {
+                        inbound.listen = "0.0.0.0";
+                    }
+                    else
+                    {
+                        inbound.listen = "127.0.0.1";
+                    }
+                    //开启udp
+                    inbound.settings.udp = i.udpEnabled;
+                    inbound.sniffing.enabled = i.sniffingEnabled;
+
+                    //add inbound
+                    v2rayConfig.inbounds.Add(inbound);
                 }
-                else
-                {
-                    inbound.listen = "127.0.0.1";
-                }
-                //开启udp
-                inbound.settings.udp = config.inbound[0].udpEnabled;
-                inbound.sniffing.enabled = config.inbound[0].sniffingEnabled;
             }
             catch
             {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace v2rayN.Mode
 {
@@ -6,6 +7,7 @@ namespace v2rayN.Mode
     /// v2ray配置文件实体类
     /// 例子SampleConfig.txt
     /// </summary>
+    [Serializable]
     public class V2rayConfig
     {
         /// <summary>
@@ -31,6 +33,7 @@ namespace v2rayN.Mode
         public Routing routing { get; set; }
     }
 
+    [Serializable]
     public class Log
     {
         /// <summary>
@@ -47,6 +50,7 @@ namespace v2rayN.Mode
         public string loglevel { get; set; }
     }
 
+    [Serializable]
     public class Inbounds
     {
         /// <summary>
@@ -77,6 +81,7 @@ namespace v2rayN.Mode
 
     }
 
+    [Serializable]
     public class Inboundsettings
     {
         /// <summary>
@@ -98,6 +103,7 @@ namespace v2rayN.Mode
         public List<UsersItem> clients { get; set; }
     }
 
+    [Serializable]
     public class UsersItem
     {
         /// <summary>
@@ -117,6 +123,7 @@ namespace v2rayN.Mode
         /// </summary>
         public string security { get; set; }
     }
+    [Serializable]
     public class Sniffing
     {
         /// <summary>
@@ -129,6 +136,7 @@ namespace v2rayN.Mode
         public List<string> destOverride { get; set; }
     }
 
+    [Serializable]
     public class Outbounds
     {
         /// <summary>
@@ -153,6 +161,7 @@ namespace v2rayN.Mode
         public Mux mux { get; set; }
     }
 
+    [Serializable]
     public class Outboundsettings
     {
         /// <summary>
@@ -170,6 +179,7 @@ namespace v2rayN.Mode
         public Response response { get; set; }
     }
 
+    [Serializable]
     public class VnextItem
     {
         /// <summary>
@@ -185,6 +195,7 @@ namespace v2rayN.Mode
         /// </summary>
         public List<UsersItem> users { get; set; }
     }
+    [Serializable]
     public class ServersItem
     {
         /// <summary>
@@ -217,14 +228,16 @@ namespace v2rayN.Mode
         public int level { get; set; }
     }
 
+    [Serializable]
     public class Mux
     {
         /// <summary>
         /// 
         /// </summary>
         public bool enabled { get; set; }
-    }       
+    }
 
+    [Serializable]
     public class Response
     {
         /// <summary>
@@ -233,6 +246,7 @@ namespace v2rayN.Mode
         public string type { get; set; }
     }
 
+    [Serializable]
     public class Dns
     {
         /// <summary>
@@ -241,6 +255,7 @@ namespace v2rayN.Mode
         public List<string> servers { get; set; }
     }
 
+    [Serializable]
     public class RulesItem
     {
         /// <summary>
@@ -267,6 +282,7 @@ namespace v2rayN.Mode
         public List<string> domain { get; set; }
     }
 
+    [Serializable]
     public class Routingsettings
     {
         /// <summary>
@@ -279,6 +295,7 @@ namespace v2rayN.Mode
         public List<RulesItem> rules { get; set; }
     }
 
+    [Serializable]
     public class Routing
     {
         /// <summary>
@@ -291,6 +308,7 @@ namespace v2rayN.Mode
         public Routingsettings settings { get; set; }
     }
 
+    [Serializable]
     public class StreamSettings
     {
         /// <summary>
@@ -325,6 +343,7 @@ namespace v2rayN.Mode
         public HttpSettings httpSettings { get; set; }
     }
 
+    [Serializable]
     public class TlsSettings
     {
         /// <summary>
@@ -338,6 +357,7 @@ namespace v2rayN.Mode
         public string serverName { get; set; }        
     }
 
+    [Serializable]
     public class TcpSettings
     {
         /// <summary>
@@ -350,6 +370,7 @@ namespace v2rayN.Mode
         public Header header { get; set; }
     }
 
+    [Serializable]
     public class Header
     {
         /// <summary>
@@ -366,6 +387,7 @@ namespace v2rayN.Mode
         public object response { get; set; }
     }
 
+    [Serializable]
     public class KcpSettings
     {
         /// <summary>
@@ -402,6 +424,7 @@ namespace v2rayN.Mode
         public Header header { get; set; }
     }
 
+    [Serializable]
     public class WsSettings
     {
         /// <summary>
@@ -419,6 +442,7 @@ namespace v2rayN.Mode
         /// </summary>
         public Headers headers { get; set; }
     }
+    [Serializable]
     public class Headers
     {
         /// <summary>
@@ -427,6 +451,7 @@ namespace v2rayN.Mode
         public string Host { get; set; }
     }
 
+    [Serializable]
     public class HttpSettings
     {
         /// <summary>

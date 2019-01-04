@@ -310,6 +310,7 @@ namespace v2rayN.Forms
             txtlocalPort2.Enabled = txtlocalPort2.Visible =
             cmbprotocol2.Enabled = cmbprotocol2.Visible = 
             chkudpEnabled2.Enabled = chkudpEnabled2.Visible =
+            chksniffingEnabled2.Enabled = chksniffingEnabled2.Visible =
             label3.Visible = blAllow2;
         }
 
